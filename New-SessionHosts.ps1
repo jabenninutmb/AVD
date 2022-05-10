@@ -18,13 +18,13 @@ if((Test-Path c:\temp) -eq $false) {
 if((Test-Path $LocalWVDpath) -eq $false) {
     New-Item -Path $LocalWVDpath -ItemType Directory
 }
+$datetime = get-date
 New-Item -Path c:\ -Name New-WVDSessionHost.log -ItemType File
 Add-Content `
 -LiteralPath C:\New-WVDSessionHost.log `
 "
-ProfilePath       = $ProfilePath
+$datetime
 RegistrationToken = $RegistrationToken
-Optimize          = $Optimize
 "
 
 #################################
@@ -51,11 +51,9 @@ $bootloader_deploy_status = Start-Process `
     -Wait `
     -Passthru
 $sts = $bootloader_deploy_status.ExitCode
-Add-Content -LiteralPath C:\New-WVDSessionHost.log "Installing WVD Bootloader Complete"
-Write-Output "Installing RDAgentBootLoader on VM Complete. Exit code=$sts`n"
+Add-Content -LiteralPath C:\New-WVDSessionHost.log "Installing WVD Bootloader Complete. Exit code=$sts"
 Wait-Event -Timeout 5
-Add-Content -LiteralPath C:\New-WVDSessionHost.log "Installing WVD Agent"
-Write-Output "Installing RD Infra Agent on VM $AgentInstaller`n"
+Add-Content -LiteralPath C:\New-WVDSessionHost.log "Installing WVD Agent on VM $AgentInstaller"
 $agent_deploy_status = Start-Process `
     -FilePath "msiexec.exe" `
     -ArgumentList "/i $WVDAgentInstaller", `
@@ -66,7 +64,8 @@ $agent_deploy_status = Start-Process `
         "REGISTRATIONTOKEN=$RegistrationToken", "/l* $LocalWVDpath\AgentInstall.txt" `
     -Wait `
     -Passthru
-Add-Content -LiteralPath C:\New-WVDSessionHost.log "WVD Agent Install Complete"
+    $sts = $agent_deploy_status.ExitCode
+Add-Content -LiteralPath C:\New-WVDSessionHost.log "WVD Agent Install Complete. Exit code=$sts"
 Wait-Event -Timeout 5
 
 ##########################
