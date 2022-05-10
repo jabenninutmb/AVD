@@ -3,18 +3,12 @@ Param (
         [string]$RegistrationToken          
 )
 
-$LocalWVDpath            = "c:\temp\wvd\"
+$LocalWVDpath            = "c:\wvd\"
 $WVDBootURI              = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
 $WVDAgentURI             = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv'
 $WVDAgentInstaller       = 'WVD-Agent.msi'
 $WVDBootInstaller        = 'WVD-Bootloader.msi'
 
-####################################
-#    Test/Create Temp Directory    #
-####################################
-if((Test-Path c:\temp) -eq $false) {
-    New-Item -Path c:\temp -ItemType Directory
-}
 if((Test-Path $LocalWVDpath) -eq $false) {
     New-Item -Path $LocalWVDpath -ItemType Directory
 }
@@ -23,26 +17,20 @@ New-Item -Path c:\ -Name New-WVDSessionHost.log -ItemType File
 Add-Content `
 -LiteralPath C:\New-WVDSessionHost.log `
 "
-$datetime
+Date              = $datetime
 RegistrationToken = $RegistrationToken
 "
 
-#################################
-#    Download WVD Componants    #
-#################################
 Add-Content -LiteralPath C:\New-WVDSessionHost.log "Downloading WVD Boot Loader"
     Invoke-WebRequest -Uri $WVDBootURI -OutFile "$LocalWVDpath$WVDBootInstaller"
 Add-Content -LiteralPath C:\New-WVDSessionHost.log "Downloading WVD Agent"
     Invoke-WebRequest -Uri $WVDAgentURI -OutFile "$LocalWVDpath$WVDAgentInstaller"
 
 
-################################
-#    Install WVD Componants    #
-################################
 Add-Content -LiteralPath C:\New-WVDSessionHost.log "Installing WVD Bootloader"
 $bootloader_deploy_status = Start-Process `
     -FilePath "msiexec.exe" `
-    -ArgumentList "/i $WVDBootInstaller", `
+    -ArgumentList "/i $LocalWVDpath\$WVDBootInstaller", `
         "/quiet", `
         "/qn", `
         "/norestart", `
@@ -56,7 +44,7 @@ Wait-Event -Timeout 5
 Add-Content -LiteralPath C:\New-WVDSessionHost.log "Installing WVD Agent on VM $AgentInstaller"
 $agent_deploy_status = Start-Process `
     -FilePath "msiexec.exe" `
-    -ArgumentList "/i $WVDAgentInstaller", `
+    -ArgumentList "/i $LocalWVDpath\$WVDAgentInstaller", `
         "/quiet", `
         "/qn", `
         "/norestart", `
@@ -68,8 +56,5 @@ $agent_deploy_status = Start-Process `
 Add-Content -LiteralPath C:\New-WVDSessionHost.log "WVD Agent Install Complete. Exit code=$sts"
 Wait-Event -Timeout 5
 
-##########################
-#    Restart Computer    #
-##########################
 Add-Content -LiteralPath C:\New-WVDSessionHost.log "Process Complete - REBOOT"
-Restart-Computer -Force 
+Restart-Computer -Force
